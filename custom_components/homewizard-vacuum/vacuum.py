@@ -25,7 +25,13 @@ from homeassistant.const import STATE_UNKNOWN, STATE_UNAVAILABLE, CONF_PASSWORD,
 
 _LOGGER = logging.getLogger(__name__)
 
-FAN_SPEEDS = ["stop","normal","strong"]
+FAN_SPEEDS = ["Quiet", "Normal", "Strong"]
+API_FAN_SPEEDS = {
+    "Quiet": "stop",
+    "Normal": "normal",
+    "Strong": "strong",
+}
+REVERSE_API_FAN_SPEEDS = {v: k for k, v in API_FAN_SPEEDS.items()}
 
 SUPPORT_VACUUM = (
     VacuumEntityFeature.BATTERY
@@ -63,7 +69,7 @@ class HWVacuumCleaner(StateVacuumEntity):
         self._device_identifier = identifier
         self._device_endpoint = endpoint
         self._name = "HW Cleaner"
-        self._state = None
+        self._state = STATE_UNKNOWN
         self._battery = None
         self._status = None
         self._token = None
@@ -115,12 +121,13 @@ class HWVacuumCleaner(StateVacuumEntity):
     async def async_set_fan_speed(self, fan_speed, **kwargs):
         """Set the vacuum's fan speed."""
 
-        if fan_speed in self.fan_speed_list:
+        if fan_speed in FAN_SPEEDS:
             self._fan_speed = fan_speed
-            new_program = "silent"
-            if self._fan_speed == FAN_SPEEDS[1]:
+            if self._fan_speed == "Quiet":
+                new_program = "silent"
+            elif self._fan_speed == "Normal":
                 new_program = "auto"
-            elif self._fan_speed == FAN_SPEEDS[2]:
+            elif self._fan_speed == "Strong":
                 new_program = "max"
             await self.async_send_command(program=new_program, activity="work")
 
@@ -135,7 +142,7 @@ class HWVacuumCleaner(StateVacuumEntity):
                     data = await response.json()
             
                     # Parse the response payload
-                    self._state = data.get("status")  # Example: "standby", "cleaning"
+                    
                     self._battery = data.get("battery_percentage")  # Battery level as a percentage
                     self._status = {
                         "program": data.get("program"),  # Example: "deep_clean", or null
@@ -145,7 +152,19 @@ class HWVacuumCleaner(StateVacuumEntity):
                         "sound": data.get("sound"),  # Example: "beeps", or other feedback
                         "faults": data.get("faults"),  # List of current faults, empty if none
                     }
-                    self._fan_speed = data.get("fan_mode")
+                    self._fan_speed = REVERSE_API_FAN_SPEEDS.get(data.get("fan_mode"))
+
+                    # Get vacuum mode
+                    if data.get("status") in ["working"]:
+                        self._state = STATE_CLEANING
+                    elif data.get("status") in ["finished_charging", "charging"]:
+                        self._state = STATE_DOCKED
+                    elif data.get("status") in ["stopped", "standby"]:
+                        self._state = STATE_IDLE
+                    elif data.get("status") in ["docking"]:
+                        self._state = STATE_RETURNING
+                    else:
+                        self._state = data.get("status")
                     return data
                 else:
                     error_message = await response.text()
