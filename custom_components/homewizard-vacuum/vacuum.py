@@ -6,7 +6,6 @@ from homeassistant.components.vacuum import (
     STATE_DOCKED,
     STATE_ERROR,
     STATE_IDLE,
-    STATE_PAUSED,
     STATE_RETURNING,
     StateVacuumEntity,
     VacuumEntityFeature
@@ -16,11 +15,9 @@ from .const import DOMAIN, API_URL, CONF_IDENTIFIER, CONF_ENDPOINT
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv, entity_platform
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.const import STATE_UNKNOWN, STATE_UNAVAILABLE, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import STATE_UNKNOWN, CONF_PASSWORD, CONF_USERNAME, CONF_NAME
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,21 +51,22 @@ async def async_setup_entry(
     password = entry.data[CONF_PASSWORD]
     identifier = entry.data[CONF_IDENTIFIER]
     endpoint = entry.data[CONF_ENDPOINT]
+    devicename = entry.data[CONF_NAME]
 
     vacs = []
-    vacs.append(HWVacuumCleaner(identifier, endpoint, username, password))
+    vacs.append(HWVacuumCleaner(identifier, endpoint, username, password, devicename))
 
     async_add_entities(vacs, False)
 
 class HWVacuumCleaner(StateVacuumEntity):
     """Representation of a Homewizard Vacuum Cleaner."""
 
-    def __init__(self, identifier, endpoint, username, password):
+    def __init__(self, identifier, endpoint, username, password, devicename):
         self._username = username
         self._password = password
         self._device_identifier = identifier
         self._device_endpoint = endpoint
-        self._name = "HW Cleaner"
+        self._name = devicename
         self._state = STATE_UNKNOWN
         self._battery = None
         self._status = None

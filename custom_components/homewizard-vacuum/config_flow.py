@@ -6,7 +6,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_NAME
 
 from .const import API_URL, CONF_ENDPOINT, CONF_IDENTIFIER, DOMAIN
 
@@ -42,12 +42,13 @@ class HWCleanerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if device:
                     # Create the config entry with necessary details
                     return self.async_create_entry(
-                        title=f"Robot Vacuum ({device['identifier']})",
+                        title=f"{device['name']} ({device['identifier']})",
                         data={
                             CONF_USERNAME: self._conf_username,
                             CONF_PASSWORD: self._conf_password,
                             CONF_IDENTIFIER: device["identifier"],
                             CONF_ENDPOINT: device["endpoint"],
+                            CONF_NAME: device["name"]
                         },
                     )
                 else:
@@ -79,6 +80,7 @@ class HWCleanerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return {
                     "identifier": device["identifier"],
                     "endpoint": device["endpoint"],
+                    "name": device["name"],
                 }
 
         return None
