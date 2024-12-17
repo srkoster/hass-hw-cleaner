@@ -1,0 +1,11 @@
+{
+    "domain": "hw_cleaner",
+    "name": "Homewizard Vacuum Cleaner",
+    "version": "0.1.0",
+    "requirements": [],
+    "codeowners": ["@srkoster"],
+    "iot_class": "cloud_push",
+    "loggers": ["hw_cleaner"],
+    "config_flow": true
+  }
+  
