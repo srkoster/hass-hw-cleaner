@@ -7,7 +7,8 @@ import asyncio
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-DOMAIN = "hw_cleaner"
+from .const import DOMAIN
+
 PLATFORMS = ["vacuum"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
