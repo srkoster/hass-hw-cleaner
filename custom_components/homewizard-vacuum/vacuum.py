@@ -150,6 +150,16 @@ class HWVacuumCleaner(StateVacuumEntity):
                     raise Exception(f"Failed to fetch device status: {response.text}")
 
     @property
+    def device_info(self):
+        """Return device registry information for this entity."""
+        return {
+            "identifiers": self._device_identifier,
+            "name": self._name,
+            "manufacturer": "Princess",
+            "model": "339000 Robot Vacuum Deluxe"
+        }
+
+    @property
     def name(self):
         return self._name
 
