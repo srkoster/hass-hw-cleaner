@@ -11,9 +11,10 @@ from homeassistant.components.vacuum import (
     StateVacuumEntity,
     VacuumEntityFeature
 )
-from .const import DOMAIN, BASE_URL, CONF_IDENTIFIER, CONF_ENDPOINT
+from .const import DOMAIN, API_URL, CONF_IDENTIFIER, CONF_ENDPOINT
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv, entity_platform
@@ -67,6 +68,7 @@ class HWVacuumCleaner(StateVacuumEntity):
         self._status = None
         self._token = None
         self._fan_speed = "stop"
+        self._api_url = API_URL
 
     async def async_added_to_hass(self):
         """Run when the entity is added to Home Assistant."""
@@ -150,18 +152,26 @@ class HWVacuumCleaner(StateVacuumEntity):
                     raise Exception(f"Failed to fetch device status: {response.text}")
 
     @property
-    def device_info(self):
-        """Return device registry information for this entity."""
-        return {
-            "identifiers": {(DOMAIN, self._device_identifier)},
-            "name": self._name,
-            "manufacturer": "Princess",
-            "model": "339000 Robot Vacuum Deluxe"
-        }
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                (DOMAIN, self._device_identifier)
+            },
+            name=self._name,
+            manufacturer="Princess",
+            model="339000 Robot Vacuum Deluxe",
+        )
 
     @property
     def name(self):
         return self._name
+    
+    @property
+    def unique_id(self):
+        """Return unique ID for this device."""
+        return self._device_identifier
 
     @property
     def state(self):
