@@ -153,7 +153,7 @@ class HWVacuumCleaner(StateVacuumEntity):
     def device_info(self):
         """Return device registry information for this entity."""
         return {
-            "identifiers": self._device_identifier,
+            "identifiers": {(DOMAIN, self._device_identifier)},
             "name": self._name,
             "manufacturer": "Princess",
             "model": "339000 Robot Vacuum Deluxe"
