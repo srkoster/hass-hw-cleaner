@@ -8,6 +8,6 @@
     "issue_tracker": "https://github.com/srkoster/hass-hw-cleaner/issues",
     "loggers": ["hw_cleaner"],
     "requirements": [],
-    "version": "0.7.0"
+    "version": "0.7.1"
   }
   
