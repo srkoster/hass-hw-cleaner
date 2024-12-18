@@ -1,5 +1,5 @@
 {
-    "domain": "homewizard-vacuum",
+    "domain": "homewizard_vacuum",
     "name": "HomeWizard Vacuum Cleaner",
     "codeowners": ["@srkoster"],
     "config_flow": true,
