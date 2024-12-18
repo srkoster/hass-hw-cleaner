@@ -1,12 +1,13 @@
 {
-    "domain": "homewizard-vacuum",
+    "domain": "homewizard_vacuum",
     "name": "HomeWizard Vacuum Cleaner",
     "codeowners": ["@srkoster"],
     "config_flow": true,
     "documentation": "https://github.com/srkoster/hass-hw-cleaner",
     "iot_class": "cloud_push",
+    "issue_tracker": "https://github.com/srkoster/hass-hw-cleaner/issues",
     "loggers": ["hw_cleaner"],
     "requirements": [],
-    "version": "0.3.0"
+    "version": "0.7.0"
   }
   
