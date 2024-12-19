@@ -76,7 +76,7 @@ class HWVacuumCleaner(StateVacuumEntity):
 
     async def async_added_to_hass(self):
         """Run when the entity is added to Home Assistant."""
-        self._token = await self._get_token()
+        await self._get_token()
 
     async def _get_token(self):
         """Fetch and store the bearer token."""
@@ -89,7 +89,7 @@ class HWVacuumCleaner(StateVacuumEntity):
             async with session.post(url, auth=auth, json=payload) as response:
                 if response.status == 200:
                     data = await response.json()
-                    return data.get("token")
+                    self._token = data.get("token")
                 raise HomeAssistantError(f"Authentication failed: {response.status}")
 
     async def async_send_command(self, activity, direction=None, program=None):
@@ -111,6 +111,10 @@ class HWVacuumCleaner(StateVacuumEntity):
                 if response.status == 200:
                     data = await response.json()
                     return data
+                elif response.status == 401:  # Unauthorized, token likely expired
+                    _LOGGER.warning("Bearer token expired, refreshing token.")
+                    await self._get_token()
+
                 raise HomeAssistantError(f"Command failed: {response.status}")
 
     async def async_clean_spot(self):
@@ -164,9 +168,14 @@ class HWVacuumCleaner(StateVacuumEntity):
                     else:
                         self._state = data.get("status")
                     return data
+                
+                elif response.status == 401:  # Unauthorized, token likely expired
+                    _LOGGER.warning("Bearer token expired, refreshing token.")
+                    await self._get_token()
+
                 else:
                     error_message = await response.text()
-                    raise Exception(f"Failed to fetch device status: {response.text}")
+                    raise Exception(f"Failed to fetch device status: {error_message}")
 
     @property
     def device_info(self) -> DeviceInfo:
