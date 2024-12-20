@@ -157,6 +157,7 @@ class HWVacuumCleaner(StateVacuumEntity):
                     self._fan_speed = REVERSE_API_FAN_SPEEDS.get(data.get("fan_mode"))
 
                     # Get vacuum mode
+                    self._attr_icon = "mdi:robot-vacuum"
                     if data.get("status") in ["working"]:
                         self._state = STATE_CLEANING
                     elif data.get("status") in ["finished_charging", "charging"]:
@@ -165,6 +166,9 @@ class HWVacuumCleaner(StateVacuumEntity):
                         self._state = STATE_IDLE
                     elif data.get("status") in ["docking"]:
                         self._state = STATE_RETURNING
+                    elif data.get("status") in ["malfunction"]:
+                        self._state = STATE_ERROR
+                        self._attr_icon = "mdi:robot-vacuum-alert"
                     else:
                         self._state = data.get("status")
                     return data
