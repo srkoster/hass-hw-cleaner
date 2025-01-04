@@ -26,7 +26,7 @@ API_FAN_SPEEDS = {
 }
 REVERSE_API_FAN_SPEEDS = {v: k for k, v in API_FAN_SPEEDS.items()}
 
-ROBOT_STATUS_TO_HA = {
+CLEANER_STATUS_TO_HA = {
     "working": VacuumActivity.CLEANING,
     "charging": VacuumActivity.DOCKED,
     "finished_charging": VacuumActivity.DOCKED,
@@ -167,7 +167,7 @@ class HWVacuumCleaner(StateVacuumEntity):
                         self._attr_icon = "mdi:robot-vacuum-alert"
                     else:
                         self._attr_icon = "mdi:robot-vacuum"
-                    self._attr_activity = ROBOT_STATUS_TO_HA[data.get("status")]
+                    self._attr_activity = CLEANER_STATUS_TO_HA[data.get("status")]
                     return data
                 
                 elif response.status == 401:  # Unauthorized, token likely expired
