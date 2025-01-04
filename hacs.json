@@ -1,3 +1,4 @@
 {
-    "name": "Homewizard Vacuum Cleaner"
+    "name": "Homewizard Vacuum Cleaner",
+    "homeassistant": "2025.1.0"
 }

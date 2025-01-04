@@ -2,12 +2,8 @@ import aiohttp
 import logging
 
 from homeassistant.components.vacuum import (
-    STATE_CLEANING,
-    STATE_DOCKED,
-    STATE_ERROR,
-    STATE_IDLE,
-    STATE_RETURNING,
     StateVacuumEntity,
+    VacuumActivity,
     VacuumEntityFeature
 )
 from .const import DOMAIN, API_URL, CONF_IDENTIFIER, CONF_ENDPOINT
@@ -17,7 +13,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.const import STATE_UNKNOWN, CONF_PASSWORD, CONF_USERNAME, CONF_NAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_NAME
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,6 +25,16 @@ API_FAN_SPEEDS = {
     "Strong": "strong",
 }
 REVERSE_API_FAN_SPEEDS = {v: k for k, v in API_FAN_SPEEDS.items()}
+
+CLEANER_STATUS_TO_HA = {
+    "working": VacuumActivity.CLEANING,
+    "charging": VacuumActivity.DOCKED,
+    "finished_charging": VacuumActivity.DOCKED,
+    "standby": VacuumActivity.IDLE,
+    "stopped": VacuumActivity.IDLE,
+    "docking": VacuumActivity.RETURNING,
+    "malfunction": VacuumActivity.ERROR,
+}
 
 SUPPORT_VACUUM = (
     VacuumEntityFeature.BATTERY
@@ -67,7 +73,7 @@ class HWVacuumCleaner(StateVacuumEntity):
         self._device_identifier = identifier
         self._device_endpoint = endpoint
         self._name = devicename
-        self._state = STATE_UNKNOWN
+        self._attr_activity: VacuumActivity | None = None
         self._battery = None
         self._status = None
         self._token = None
@@ -157,20 +163,11 @@ class HWVacuumCleaner(StateVacuumEntity):
                     self._fan_speed = REVERSE_API_FAN_SPEEDS.get(data.get("fan_mode"))
 
                     # Get vacuum mode
-                    self._attr_icon = "mdi:robot-vacuum"
-                    if data.get("status") in ["working"]:
-                        self._state = STATE_CLEANING
-                    elif data.get("status") in ["finished_charging", "charging"]:
-                        self._state = STATE_DOCKED
-                    elif data.get("status") in ["stopped", "standby"]:
-                        self._state = STATE_IDLE
-                    elif data.get("status") in ["docking"]:
-                        self._state = STATE_RETURNING
-                    elif data.get("status") in ["malfunction"]:
-                        self._state = STATE_ERROR
+                    if data.get("status") in ["malfunction"]:
                         self._attr_icon = "mdi:robot-vacuum-alert"
                     else:
-                        self._state = data.get("status")
+                        self._attr_icon = "mdi:robot-vacuum"
+                    self._attr_activity = CLEANER_STATUS_TO_HA[data.get("status")]
                     return data
                 
                 elif response.status == 401:  # Unauthorized, token likely expired
@@ -204,8 +201,8 @@ class HWVacuumCleaner(StateVacuumEntity):
         return self._device_identifier
 
     @property
-    def state(self):
-        return self._state
+    def activity(self) -> VacuumActivity | None:
+        return self._attr_activity
 
     @property
     def battery_level(self):
