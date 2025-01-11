@@ -69,7 +69,8 @@ class HWCleanerCoordinator(DataUpdateCoordinator):
         async with aiohttp.ClientSession() as session:
             async with session.post(url, auth=auth, json=payload) as response:
                 if response.status == 200:
-                    self._token = response.json().get("token")
+                    data = await response.json()
+                    self._token = data.get("token")
                 else:
                     raise UpdateFailed(f"Authentication failed: {response.status}")
                 
@@ -123,24 +124,24 @@ class HWCleanerCoordinator(DataUpdateCoordinator):
             if http_method == "GET":
                 async with session.get(url, headers=headers) as response:
                     if response.status == 200:
-                        _LOGGER.debug("Command successful: %s", payload)
+                        _LOGGER.debug("Command successful: %s", command)
                         return await response.json() 
                     elif response.status == 401:
                         _LOGGER.debug("Token expired during command, refreshing.")
                         await self._get_token()
                         return await self._send_api_command(command, payload)
                     else:
-                        _LOGGER.error("Command failed: %s", response.status)
-                        raise UpdateFailed(f"Command failed: {response.status}")
+                        _LOGGER.error("Command failed: %s", command)
+                        raise UpdateFailed(f"Command failed: {command}")
             elif http_method == "POST":
-                async with session.get(url, headers=headers) as response:
+                async with session.post(url, json=payload, headers=headers) as response:
                     if response.status == 200:
-                        _LOGGER.debug("Command successful: %s", payload)
+                        _LOGGER.debug("Command successful: %s", command)
                         await self.async_request_refresh()
                     elif response.status == 401:
                         _LOGGER.debug("Token expired during command, refreshing.")
                         await self._get_token()
                         await self._send_api_command(command, payload)
                     else:
-                        _LOGGER.error("Command failed: %s", response.status)
-                        raise UpdateFailed(f"Command failed: {response.status}")
+                        _LOGGER.error("Command failed: %s", command)
+                        raise UpdateFailed(f"Command failed: {command}")
