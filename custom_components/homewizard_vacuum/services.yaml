@@ -1,0 +1,17 @@
+program_deep_clean:
+  target:
+    entity:
+      domain: vacuum
+      integration: homewizard_vacuum
+
+program_edge:
+  target:
+    entity:
+      domain: vacuum
+      integration: homewizard_vacuum
+
+program_random:
+  target:
+    entity:
+      domain: vacuum
+      integration: homewizard_vacuum

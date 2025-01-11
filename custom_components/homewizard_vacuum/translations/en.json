@@ -1,0 +1,16 @@
+{
+    "services": {
+      "program_deep_clean": {
+        "name": "Program Deep Clean",
+        "description": "Start a Deep Clean program"
+      },
+      "program_edge": {
+        "name": "Program Edge",
+        "description": "Start an Edge program"
+      },
+      "program_random": {
+        "name": "Program Random",
+        "description": "Start a Random program"
+      }
+    }
+}

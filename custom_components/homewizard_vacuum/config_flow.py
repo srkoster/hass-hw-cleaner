@@ -41,6 +41,8 @@ class HWCleanerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                 if device:
                     # Create the config entry with necessary details
+                    await self.async_set_unique_id(device['identifier'])
+                    self._abort_if_unique_id_configured()
                     return self.async_create_entry(
                         title=f"{device['name']} ({device['identifier']})",
                         data={
