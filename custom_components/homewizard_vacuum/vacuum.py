@@ -26,14 +26,20 @@ API_FAN_SPEEDS = {
 }
 REVERSE_API_FAN_SPEEDS = {v: k for k, v in API_FAN_SPEEDS.items()}
 
+FAN_SPEED_TO_PROGRAM = {
+    "Quiet": "silent",
+    "Normal": "auto",
+    "Strong": "max",
+}
+
 CLEANER_STATUS_TO_HA = {
-    "working": VacuumActivity.CLEANING,
-    "charging": VacuumActivity.DOCKED,
-    "finished_charging": VacuumActivity.DOCKED,
-    "standby": VacuumActivity.IDLE,
-    "stopped": VacuumActivity.IDLE,
-    "docking": VacuumActivity.RETURNING,
-    "malfunction": VacuumActivity.ERROR,
+    "Working": VacuumActivity.CLEANING,
+    "Charging": VacuumActivity.DOCKED,
+    "Finished Charging": VacuumActivity.DOCKED,
+    "Standby": VacuumActivity.IDLE,
+    "Stopped": VacuumActivity.IDLE,
+    "Docking": VacuumActivity.RETURNING,
+    "Malfunction": VacuumActivity.ERROR,
 }
 
 SUPPORT_VACUUM = (
@@ -88,7 +94,8 @@ class HWVacuumCleaner(HWCleanerBaseEntity, StateVacuumEntity):
 
     @property
     def activity(self) -> VacuumActivity | None:
-        return CLEANER_STATUS_TO_HA.get(self.coordinator._attr_device_status, VacuumActivity.IDLE)
+        status = self.coordinator._attr_device_status
+        return CLEANER_STATUS_TO_HA.get(status, VacuumActivity.IDLE)
 
     @property
     def battery_level(self):
@@ -146,10 +153,11 @@ class HWVacuumCleaner(HWCleanerBaseEntity, StateVacuumEntity):
 
     async def async_set_fan_speed(self, fan_speed, **kwargs):
         """Set the vacuum's fan speed."""
-
+        _LOGGER.debug("Set HA fan speed to: %s", fan_speed)
         if fan_speed in FAN_SPEEDS:
-            api_fan_speed = API_FAN_SPEEDS[fan_speed]
-            await self.coordinator.control_vacuum({"activity": "work", "program": api_fan_speed})
+            program = FAN_SPEED_TO_PROGRAM[fan_speed]
+            _LOGGER.debug("Set fan speed to: %s", program)
+            await self.coordinator.control_vacuum({"activity": "work", "program": program})
 
     async def async_send_command(self, payload: str) -> None:
         """Send a command to a vacuum cleaner."""
