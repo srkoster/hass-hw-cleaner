@@ -1,20 +1,20 @@
 import aiohttp
 import logging
+import voluptuous as vol
 
 from homeassistant.components.vacuum import (
     StateVacuumEntity,
     VacuumActivity,
     VacuumEntityFeature
 )
-from .const import DOMAIN, API_URL, CONF_IDENTIFIER, CONF_ENDPOINT
+from .base import HWCleanerBaseEntity
+from .const import DOMAIN, CONF_IDENTIFIER
+from .coordinator import HWCleanerCoordinator
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_NAME
-
+from homeassistant.helpers import config_validation as cv, entity_platform
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,188 +49,108 @@ SUPPORT_VACUUM = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-) -> None:
+):
     """Create vacuum entities from config flow."""
-    username = entry.data[CONF_USERNAME]
-    password = entry.data[CONF_PASSWORD]
-    identifier = entry.data[CONF_IDENTIFIER]
-    endpoint = entry.data[CONF_ENDPOINT]
-    devicename = entry.data[CONF_NAME]
+    # This gets the data update coordinator from hass.data as specified in your __init__.py
+    coordinator: HWCleanerCoordinator = hass.data[DOMAIN][
+        config_entry.entry_id
+    ]
 
     vacs = []
-    vacs.append(HWVacuumCleaner(identifier, endpoint, username, password, devicename))
+    vacs.append(HWVacuumCleaner(coordinator, "Vacuum"))
 
     async_add_entities(vacs, False)
 
-class HWVacuumCleaner(StateVacuumEntity):
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        "program_deep_clean",
+        {},
+        "async_start_program_deep_clean"
+    )
+    platform.async_register_entity_service(
+        "program_edge",
+        {},
+        "async_start_program_edge"
+    )
+    platform.async_register_entity_service(
+        "program_random",
+        {},
+        "async_start_program_random"
+    )
+
+class HWVacuumCleaner(HWCleanerBaseEntity, StateVacuumEntity):
     """Representation of a Homewizard Vacuum Cleaner."""
 
-    def __init__(self, identifier, endpoint, username, password, devicename):
-        self._username = username
-        self._password = password
-        self._device_identifier = identifier
-        self._device_endpoint = endpoint
-        self._name = devicename
-        self._attr_activity: VacuumActivity | None = None
-        self._battery = None
-        self._status = None
-        self._token = None
-        self._fan_speed = "stop"
-        self._api_url = API_URL
+    _attr_fan_speed_list = FAN_SPEEDS
+    _attr_supported_features = SUPPORT_VACUUM
 
-    async def async_added_to_hass(self):
-        """Run when the entity is added to Home Assistant."""
-        await self._get_token()
+    @property
+    def activity(self) -> VacuumActivity | None:
+        return CLEANER_STATUS_TO_HA.get(self.coordinator._attr_device_status, VacuumActivity.IDLE)
 
-    async def _get_token(self):
-        """Fetch and store the bearer token."""
-        _LOGGER.debug("Fetch and store token")
-        url = f"{self._api_url}/auth/token"
-        auth = aiohttp.BasicAuth(self._username, self._password)
-        payload = {"device": self._device_identifier}
+    @property
+    def battery_level(self):
+        return self.coordinator._attr_battery_percentage
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, auth=auth, json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    self._token = data.get("token")
-                raise HomeAssistantError(f"Authentication failed: {response.status}")
+    @property
+    def device_id(self):
+        """Return the device ID from the coordinator's data."""
+        return self.coordinator._device_identifier
+    
+    @property
+    def icon(self):
+        """Return the icon for the current state."""
+        icon = None
+        if self.coordinator._attr_device_status in ["malfunction"]:
+            icon = "mdi:robot-vacuum-alert"
+        else:
+            icon = "mdi:robot-vacuum"
+        return icon
 
-    async def async_send_command(self, activity, direction=None, program=None):
-        """Send a command to the vacuum with the required syntax."""
-        _LOGGER.debug("Process command")
-        url = f"{self._device_endpoint}/control"
-        headers = {"Authorization": f"Bearer {self._token}"}
-        
-        # Construct the payload with optional parameters
-        payload = {"activity": activity}
-        if direction:
-            payload["direction"] = direction
-        if program:
-            payload["program"] = program
+    @property
+    def supported_features(self):
+        return self._attr_supported_features
 
-        # Send the command
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data
-                elif response.status == 401:  # Unauthorized, token likely expired
-                    _LOGGER.warning("Bearer token expired, refreshing token.")
-                    await self._get_token()
+    @property
+    def fan_speed_list(self):
+        """Return the status of the vacuum."""
+        return self._attr_fan_speed_list
 
-                raise HomeAssistantError(f"Command failed: {response.status}")
+    @property
+    def fan_speed(self):
+        """Return the status of the vacuum."""
+        return REVERSE_API_FAN_SPEEDS.get(self.coordinator._attr_fan_mode)
+
+    async def async_start(self):
+        await self.coordinator.control_vacuum({"activity": "work"})
+
+    async def async_stop(self):
+        await self.coordinator.control_vacuum({"activity": "suspend", "direction": "stop"})
+
+    async def async_return_to_base(self):
+        await self.coordinator.control_vacuum({"activity": "charge"})
 
     async def async_clean_spot(self):
-        await self.async_send_command(program="spot", activity="work")  
+        await self.coordinator.control_vacuum({"activity": "work", "program": "spot"})
+
+    async def async_start_program_deep_clean(self):
+        await self.coordinator.control_vacuum({"activity": "work", "program": "deep_clean"})
+
+    async def async_start_program_edge(self):
+        await self.coordinator.control_vacuum({"activity": "work", "program": "edge"})
+
+    async def async_start_program_random(self):
+        await self.coordinator.control_vacuum({"activity": "work", "program": "random"})
 
     async def async_set_fan_speed(self, fan_speed, **kwargs):
         """Set the vacuum's fan speed."""
 
         if fan_speed in FAN_SPEEDS:
-            self._fan_speed = fan_speed
-            if self._fan_speed == "Quiet":
-                new_program = "silent"
-            elif self._fan_speed == "Normal":
-                new_program = "auto"
-            elif self._fan_speed == "Strong":
-                new_program = "max"
-            await self.async_send_command(program=new_program, activity="work")
+            api_fan_speed = API_FAN_SPEEDS[fan_speed]
+            await self.coordinator.control_vacuum({"activity": "work", "program": api_fan_speed})
 
-    async def async_update(self):
-        """Fetch the latest state from the API."""
-        _LOGGER.debug("Update status")
-        url = f"{self._device_endpoint}"
-        headers = {"Authorization": f"Bearer {self._token}"}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-            
-                    # Parse the response payload
-                    
-                    self._battery = data.get("battery_percentage")  # Battery level as a percentage
-                    self._status = {
-                        "program": data.get("program"),  # Example: "deep_clean", or null
-                        "fan_mode": data.get("fan_mode"),  # Example: "stop", "normal", "strong"
-                        "direction": data.get("direction"),  # Example: "forward", "backward", or null
-                        "brush": data.get("brush"),  # Example: "suction", "sweeping"
-                        "sound": data.get("sound"),  # Example: "beeps", or other feedback
-                        "faults": data.get("faults"),  # List of current faults, empty if none
-                    }
-                    self._fan_speed = REVERSE_API_FAN_SPEEDS.get(data.get("fan_mode"))
-
-                    # Get vacuum mode
-                    if data.get("status") in ["malfunction"]:
-                        self._attr_icon = "mdi:robot-vacuum-alert"
-                    else:
-                        self._attr_icon = "mdi:robot-vacuum"
-                    self._attr_activity = CLEANER_STATUS_TO_HA[data.get("status")]
-                    return data
-                
-                elif response.status == 401:  # Unauthorized, token likely expired
-                    _LOGGER.warning("Bearer token expired, refreshing token.")
-                    await self._get_token()
-
-                else:
-                    error_message = await response.text()
-                    raise Exception(f"Failed to fetch device status: {error_message}")
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        return DeviceInfo(
-            identifiers={
-                # Serial numbers are unique identifiers within a specific domain
-                (DOMAIN, self._device_identifier)
-            },
-            name=self._name,
-            manufacturer="Princess",
-            model="339000 Robot Vacuum Deluxe",
-        )
-
-    @property
-    def name(self):
-        return self._name
-    
-    @property
-    def unique_id(self):
-        """Return unique ID for this device."""
-        return self._device_identifier
-
-    @property
-    def activity(self) -> VacuumActivity | None:
-        return self._attr_activity
-
-    @property
-    def battery_level(self):
-        return self._battery
-
-    @property
-    def device_id(self):
-        return self._get_device()["id"]
-
-    @property
-    def supported_features(self):
-        return SUPPORT_VACUUM
-
-    @property
-    def fan_speed_list(self):
-        """Return the status of the vacuum."""
-        return FAN_SPEEDS
-
-    @property
-    def fan_speed(self):
-        """Return the status of the vacuum."""
-        return self._fan_speed
-
-    async def async_start(self):
-        await self.async_send_command(activity="work")
-
-    async def async_stop(self):
-        await self.async_send_command(activity="suspend", direction="stop")
-
-    async def async_return_to_base(self):
-        await self.async_send_command(activity="charge")
+    async def async_send_command(self, payload: str) -> None:
+        """Send a command to a vacuum cleaner."""
+        await self.coordinator.control_vacuum(payload)
