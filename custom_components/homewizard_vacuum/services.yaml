@@ -1,20 +1,20 @@
 program_deep_clean:
   name: Program deep clean
-  decription: Start deep clean program
+  decription: "Start deep clean program"
   target:
     entity:
       domain: vacuum
 
 program_edge:
   name: Program edge
-  decription: Start edge program
+  decription: "Start edge program"
   target:
     entity:
       domain: vacuum
 
 program_random:
   name: Program random
-  decription: Start random program
+  decription: "Start random program"
   target:
     entity:
       domain: vacuum
