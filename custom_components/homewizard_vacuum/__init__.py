@@ -12,7 +12,7 @@ from homeassistant.const import Platform
 from .const import DOMAIN
 from .coordinator import HWCleanerCoordinator
 
-PLATFORMS: list[Platform] = [Platform.VACUUM, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.VACUUM, Platform.SENSOR, Platform.SWITCH]
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up HW Vacuum Cleaner from a config entry."""
