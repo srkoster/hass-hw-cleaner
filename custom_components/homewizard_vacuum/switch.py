@@ -12,8 +12,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.components.switch import SwitchEntity
 
-SOUND_OPTIONS = ["Beeps", "English", "No sound"]
-
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
