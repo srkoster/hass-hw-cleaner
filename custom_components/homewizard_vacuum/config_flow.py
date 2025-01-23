@@ -4,15 +4,15 @@ import logging
 import requests
 import voluptuous as vol
 
-from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_NAME
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 
 from .const import API_URL, CONF_ENDPOINT, CONF_IDENTIFIER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-class HWCleanerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class HWCleanerConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for HW Vacuum Cleaner."""
 
     VERSION = 1
@@ -89,15 +89,14 @@ class HWCleanerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(
+        config_entry: ConfigEntry
+    ):
         """Get the options flow for this handler."""
-        return RobotVacuumOptionsFlow(config_entry)
+        return RobotVacuumOptionsFlow()
 
-class RobotVacuumOptionsFlow(config_entries.OptionsFlow):
+class RobotVacuumOptionsFlow(OptionsFlow):
     """Handle options flow for the Robot Vacuum integration."""
-
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Handle options configuration."""
