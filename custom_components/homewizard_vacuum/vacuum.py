@@ -43,8 +43,7 @@ CLEANER_STATUS_TO_HA = {
 }
 
 SUPPORT_VACUUM = (
-    VacuumEntityFeature.BATTERY
-    | VacuumEntityFeature.CLEAN_SPOT
+    VacuumEntityFeature.CLEAN_SPOT
     | VacuumEntityFeature.FAN_SPEED
     | VacuumEntityFeature.RETURN_HOME
     | VacuumEntityFeature.SEND_COMMAND
@@ -96,10 +95,6 @@ class HWVacuumCleaner(HWCleanerBaseEntity, StateVacuumEntity):
     def activity(self) -> VacuumActivity | None:
         status = self.coordinator._attr_device_status
         return CLEANER_STATUS_TO_HA.get(status, VacuumActivity.IDLE)
-
-    @property
-    def battery_level(self):
-        return self.coordinator._attr_battery_percentage
 
     @property
     def device_id(self):
