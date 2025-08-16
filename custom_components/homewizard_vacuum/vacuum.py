@@ -15,6 +15,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.const import EntityCategory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,8 +44,7 @@ CLEANER_STATUS_TO_HA = {
 }
 
 SUPPORT_VACUUM = (
-    VacuumEntityFeature.BATTERY
-    | VacuumEntityFeature.CLEAN_SPOT
+    VacuumEntityFeature.CLEAN_SPOT
     | VacuumEntityFeature.FAN_SPEED
     | VacuumEntityFeature.RETURN_HOME
     | VacuumEntityFeature.SEND_COMMAND
@@ -91,15 +91,12 @@ class HWVacuumCleaner(HWCleanerBaseEntity, StateVacuumEntity):
 
     _attr_fan_speed_list = FAN_SPEEDS
     _attr_supported_features = SUPPORT_VACUUM
+    _attr_entity_category = EntityCategory.CONFIG
 
     @property
     def activity(self) -> VacuumActivity | None:
         status = self.coordinator._attr_device_status
         return CLEANER_STATUS_TO_HA.get(status, VacuumActivity.IDLE)
-
-    @property
-    def battery_level(self):
-        return self.coordinator._attr_battery_percentage
 
     @property
     def device_id(self):
