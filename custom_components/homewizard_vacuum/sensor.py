@@ -5,7 +5,7 @@ from .base import HWCleanerBaseEntity
 from .const import DOMAIN, CONF_IDENTIFIER
 from .coordinator import HWCleanerCoordinator
 
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import PERCENTAGE, EntityCategory
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
@@ -40,8 +40,10 @@ class HWVacuumBrushSensor(HWCleanerBaseEntity, SensorEntity):
 
     entity_description = SensorEntityDescription(
         key="brush",
-        icon="mdi:hvac"
+        icon="mdi:hvac",
+        entity_category=EntityCategory.DIAGNOSTIC
     )
+    
 
     @property
     def state(self):
@@ -58,7 +60,8 @@ class HWVacuumStatusSensor(HWCleanerBaseEntity, SensorEntity):
 
     entity_description = SensorEntityDescription(
         key="status",
-        icon="mdi:list-status"
+        icon="mdi:list-status",
+        entity_category=EntityCategory.DIAGNOSTIC
     )
 
     @property
@@ -76,7 +79,8 @@ class HWVacuumFaultsSensor(HWCleanerBaseEntity, SensorEntity):
 
     entity_description = SensorEntityDescription(
         key="faults",
-        icon="mdi:alert-circle"
+        icon="mdi:alert-circle",
+        entity_category=EntityCategory.DIAGNOSTIC
     )
 
     @property
@@ -97,7 +101,8 @@ class HWVacuumBatterySensor(HWCleanerBaseEntity, SensorEntity):
         icon="mdi:battery",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY
+        device_class=SensorDeviceClass.BATTERY,
+        entity_category=EntityCategory.DIAGNOSTIC
     )
 
     @property
