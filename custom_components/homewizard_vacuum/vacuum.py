@@ -15,6 +15,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.const import EntityCategory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -90,6 +91,7 @@ class HWVacuumCleaner(HWCleanerBaseEntity, StateVacuumEntity):
 
     _attr_fan_speed_list = FAN_SPEEDS
     _attr_supported_features = SUPPORT_VACUUM
+    _attr_entity_category = EntityCategory.CONFIG
 
     @property
     def activity(self) -> VacuumActivity | None:

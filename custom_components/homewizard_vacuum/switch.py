@@ -11,6 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.const import EntityCategory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ async def async_setup_entry(
 
 class HWVacuumSoundSwitch(HWCleanerBaseEntity, SwitchEntity):
     """Sensor entity for the vacuum's sound type."""
+    
+    _attr_entity_category = EntityCategory.CONFIG
     
     @property
     def available(self):
